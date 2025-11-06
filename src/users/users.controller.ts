@@ -2,10 +2,17 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Post('change-password/:id')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@Param('id') id: string, @Body() changePasswordDto: ChangePasswordDto) {
+    return await this.usersService.changePassword(id, changePasswordDto);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
