@@ -8,8 +8,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post('change-password/:id')
-  @HttpCode(HttpStatus.OK)
+  @Patch(':id/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(@Param('id') id: string, @Body() changePasswordDto: ChangePasswordDto) {
     return await this.usersService.changePassword(id, changePasswordDto);
   }
