@@ -181,4 +181,24 @@ export class UsersService {
       throw error;
     }
   }
+
+  async findByEmail(email: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+      
+      if (!user) {
+        throw new NotFoundException(`User with email ${email} not found`);
+      }
+      
+      return user;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error fetching user by email ${email}`, error.stack);
+      throw error;
+    }
+  }
 }
