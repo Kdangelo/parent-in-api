@@ -19,4 +19,16 @@ model User {
   password  String   // Aquí se guardará la contraseña hasheada
   name      String?  // Opcional, puede ser nullable
   enable    Boolean  @default(true)
+  isEmailVerified Boolean @default(false)
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  code      String   // Código de 6 dígitos (ej: "123456")
+  expiresAt DateTime // Fecha de expiración
+  createdAt DateTime @default(now())
+
+  @@unique([email, code])
+  @@map("email_verification_tokens")
 }
