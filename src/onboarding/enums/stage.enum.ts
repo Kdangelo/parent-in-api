@@ -1,0 +1,6 @@
+export enum StageEnum {
+  PRE_LICENSE = 'PRE_LICENSE',
+  LICENSE = 'LICENSE',
+  POST_LICENSE = 'POST_LICENSE',
+}
+

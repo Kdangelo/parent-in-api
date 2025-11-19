@@ -65,6 +65,7 @@ export class UsersService {
           email: true,
           name: true,
           enable: true,
+          isOnboardingCompleted: true,
           password: false,
         },
       });
