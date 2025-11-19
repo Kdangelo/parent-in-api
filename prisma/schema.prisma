@@ -13,22 +13,106 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum StageEnum {
+  PRE_LICENSE
+  LICENSE
+  POST_LICENSE
+}
+
+enum RoleEnum {
+  MOTHER
+  FATHER
+  OTHER
+}
+
+enum FamilyTypeEnum {
+  PADRE_MADRE
+  MADRE_MADRE
+  PADRE_PADRE
+  MADRE
+  PADRE
+  OTHER
+}
+
+enum TrimesterEnum {
+  TRIMESTER_1
+  TRIMESTER_2
+  TRIMESTER_3
+}
+
+enum LicenseDurationEnum {
+  LESS_THAN_1_MONTH
+  ONE_TO_3_MONTHS
+  THREE_TO_6_MONTHS
+  MORE_THAN_6_MONTHS
+  OTHER
+}
+
+enum WorkModalityEnum {
+  FULL_TIME_PRESENTIAL
+  FULL_TIME_HYBRID
+  FULL_TIME_REMOTE
+  PART_TIME_PRESENTIAL
+  PART_TIME_HYBRID
+  PART_TIME_REMOTE
+  OTHER
+}
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // Aquí se guardará la contraseña hasheada
-  name      String?  // Opcional, puede ser nullable
-  enable    Boolean  @default(true)
-  isEmailVerified Boolean @default(false)
+  id                    String   @id @default(uuid())
+  email                 String   @unique
+  password              String
+  name                  String?
+  enable                Boolean  @default(true)
+  isEmailVerified       Boolean  @default(false)
+  isOnboardingCompleted Boolean  @default(false)
+  onboarding            OnboardingResponses?
+  @@map("users")
 }
 
 model EmailVerificationToken {
   id        String   @id @default(cuid())
   email     String
-  code      String   // Código de 6 dígitos (ej: "123456")
-  expiresAt DateTime // Fecha de expiración
+  code      String
+  expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@unique([email, code])
   @@map("email_verification_tokens")
+}
+
+model OnboardingResponses {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // ===== PASO 1: Identidad =====
+  userRole                RoleEnum?
+  familyType              FamilyTypeEnum?
+  familyTypeOther         String?
+  currentStage            StageEnum?
+  // ===== PASO 2: Datos específicos por etapa (campos universales) =====
+  // PRE_LICENSE
+  trimester               TrimesterEnum?
+  estimatedDueDate         DateTime?
+  // LICENSE
+  babyBirthDate           DateTime?
+  licenseDuration         LicenseDurationEnum?
+  licenseDurationOther    String?
+  // POST_LICENSE
+  workModality            WorkModalityEnum?
+  workModalityOther       String?
+  // ===== PASO 3: Temas de aprendizaje =====
+  // Array de strings (JSON) o relación a tabla catalogo (recomendado para después)
+  // Por ahora: array JSON
+  learningTopics          String[] @default([])
+  // ===== Necesidades de apoyo (por etapa, arrays JSON) =====
+  preLicenseSupportNeeds  String[] @default([])
+  licenseSupportNeeds     String[] @default([])
+  postLicenseSupportNeeds String[] @default([])
+  // ===== AUDITORÍA =====
+  is_onboarding_completed Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  completedAt             DateTime?
+  updatedAt               DateTime @updatedAt
+  @@map("onboarding_responses")
 }

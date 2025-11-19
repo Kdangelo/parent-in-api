@@ -138,6 +138,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         enable: user.enable,
+        isOnboardingCompleted: user.isOnboardingCompleted,
       },
     };
   }

@@ -1,0 +1,9 @@
+export enum FamilyTypeEnum {
+  PADRE_MADRE = 'PADRE_MADRE',
+  MADRE_MADRE = 'MADRE_MADRE',
+  PADRE_PADRE = 'PADRE_PADRE',
+  MADRE = 'MADRE',
+  PADRE = 'PADRE',
+  OTHER = 'OTHER',
+}
+
