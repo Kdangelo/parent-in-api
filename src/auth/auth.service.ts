@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -110,6 +110,13 @@ export class AuthService {
     } catch (err) {
       // no revelar si el email existe
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Verificar que el email esté verificado
+    if (!user.isEmailVerified) {
+      throw new ForbiddenException(
+        'Debes verificar tu email antes de iniciar sesión. Usa /auth/resend-verification para reenviar el código.',
+      );
     }
 
     // Verificar la contraseña
