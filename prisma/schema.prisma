@@ -69,6 +69,7 @@ model User {
   isEmailVerified       Boolean  @default(false)
   isOnboardingCompleted Boolean  @default(false)
   onboarding            OnboardingResponses?
+  googleId              String?  @unique
   @@map("users")
 }
 
