@@ -167,4 +167,44 @@ export class AuthService {
 
     return user;
   }
+
+  async googleLogin(user: any) {
+    const { googleId, email, name } = user;
+
+    let existingUser = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!existingUser) {
+      existingUser = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          googleId,
+          password: 'placeholder-password',
+        },
+      });
+    }
+
+    const payload = { sub: existingUser.id, email: existingUser.email };
+    return {
+      accessToken: this.jwtService.sign(payload),
+    };
+  }
+
+  async validateGoogleUser({ googleId, email, name }: { googleId: string; email: string; name: string }) {
+
+    let user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          googleId,
+          password: '',
+        },
+      });
+    }
+
+    return user;
+  }
 }
