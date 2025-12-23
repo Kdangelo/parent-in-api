@@ -144,6 +144,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        lastName: user.lastName,
         enable: user.enable,
         isOnboardingCompleted: user.isOnboardingCompleted,
       },
@@ -157,6 +158,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        lastName: true,
         enable: true,
       },
     });

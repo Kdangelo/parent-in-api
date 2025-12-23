@@ -65,6 +65,7 @@ model User {
   email                 String   @unique
   password              String
   name                  String?
+  lastName              String?  @map("last_name")
   enable                Boolean  @default(true)
   isEmailVerified       Boolean  @default(false)
   isOnboardingCompleted Boolean  @default(false)

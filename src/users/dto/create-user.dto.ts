@@ -19,6 +19,11 @@ export class CreateUserDto {
   name?: string;
 
   @IsOptional()
+  @IsString({ message: 'El apellido debe ser un texto' })
+  @IsNotEmpty({ message: 'El apellido no puede estar vacío si se proporciona' })
+  lastName?: string;
+
+  @IsOptional()
   @IsBoolean({ message: 'El campo enable debe ser un valor booleano' })
   enable?: boolean;
 }
