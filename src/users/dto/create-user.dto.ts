@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, IsBoolean, MinLength, IsNotEmpty, Matches } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsBoolean, MinLength, IsNotEmpty, Matches, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateUserDto {
@@ -7,20 +7,20 @@ export class CreateUserDto {
   @Transform(({ value }) => value?.toLowerCase().trim())
   email: string;
 
-  @IsNotEmpty({ message: 'La contraseña es requerida' })
+  @IsOptional()
+  @ValidateIf((o) => o.password !== undefined) 
   @IsString({ message: 'La contraseña debe ser un texto' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&])[A-Za-z\d@$!%?&]/,
   { message: 'La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales' })
-  password: string;
-  @IsOptional()
-  @IsString({ message: 'El nombre debe ser un texto' })
-  @IsNotEmpty({ message: 'El nombre no puede estar vacío si se proporciona' })
-  name?: string;
+  password?: string;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'El nombre es requerido' })
+  @IsString({ message: 'El nombre debe ser un texto' })
+  name: string;
+
+  @IsOptional() 
   @IsString({ message: 'El apellido debe ser un texto' })
-  @IsNotEmpty({ message: 'El apellido no puede estar vacío si se proporciona' })
   lastName?: string;
 
   @IsOptional()

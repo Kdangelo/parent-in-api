@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -22,6 +22,11 @@ export class AuthService {
 
   // Registro de usuario y envío de código de verificación
   async register(createUserDto: CreateUserDto) {
+    // Validar que se proporcione password para registro normal
+    if (!createUserDto.password) {
+      throw new BadRequestException('Password is required for email registration');
+    }
+
     // Crear usuario con isEmailVerified por defecto en false
     const user = await this.usersService.create(createUserDto);
 
@@ -109,7 +114,13 @@ export class AuthService {
       user = await this.usersService.findByEmail(loginDto.email);
     } catch (err) {
       // no revelar si el email existe
+      this.logger.debug('Login attempt failed', err);
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Verificar que el usuario no sea de Google
+    if (!user.password) {
+      throw new UnauthorizedException('Esta cuenta usa login de Google. Por favor igresa con Google.');
     }
 
     // Verificar que el email esté verificado
@@ -171,7 +182,7 @@ export class AuthService {
   }
 
   async googleLogin(user: any) {
-    const { googleId, email, name } = user;
+    const { googleId, email, name, lastName } = user;
 
     let existingUser = await this.prisma.user.findUnique({ where: { email } });
 
@@ -180,8 +191,10 @@ export class AuthService {
         data: {
           email,
           name,
+          lastName: lastName || '',
           googleId,
-          password: 'placeholder-password',
+          isEmailVerified: true,
+          // password será null para usuarios de Google
         },
       });
     }
@@ -192,8 +205,17 @@ export class AuthService {
     };
   }
 
-  async validateGoogleUser({ googleId, email, name }: { googleId: string; email: string; name: string }) {
-
+  async validateGoogleUser({
+    googleId,
+    email,
+    name,
+    lastName
+  }: {
+    googleId: string;
+    email: string;
+    name: string;
+    lastName?: string;
+  }) {
     let user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -201,8 +223,10 @@ export class AuthService {
         data: {
           email,
           name,
+          lastName: lastName || '',
           googleId,
-          password: '',
+          isEmailVerified: true,
+          // password será null para usuarios de Google
         },
       });
     }
