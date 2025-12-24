@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, IsBoolean, MinLength, IsNotEmpty, Matches } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsBoolean, MinLength, IsNotEmpty, Matches, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -13,26 +13,21 @@ export class CreateUserDto {
   @Transform(({ value }) => value?.toLowerCase().trim())
   email: string;
 
-  @ApiProperty({
-    description: 'Contraseña del usuario. Debe contener al menos 8 caracteres, mayúsculas, minúsculas, números y caracteres especiales',
-    example: 'MiContraseña123!',
-    minLength: 8,
-  })
-  @IsNotEmpty({ message: 'La contraseña es requerida' })
+  @IsOptional()
+  @ValidateIf((o) => o.password !== undefined) 
   @IsString({ message: 'La contraseña debe ser un texto' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%?&])[A-Za-z\d@$!%?&]/,
   { message: 'La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales' })
-  password: string;
+  password?: string;
 
-  @ApiPropertyOptional({
-    description: 'Nombre del usuario',
-    example: 'Juan',
-  })
-  @IsOptional()
+  @IsNotEmpty({ message: 'El nombre es requerido' })
   @IsString({ message: 'El nombre debe ser un texto' })
-  @IsNotEmpty({ message: 'El nombre no puede estar vacío si se proporciona' })
-  name?: string;
+  name: string;
+
+  @IsOptional() 
+  @IsString({ message: 'El apellido debe ser un texto' })
+  lastName?: string;
 
   @ApiPropertyOptional({
     description: 'Indica si el usuario está habilitado',

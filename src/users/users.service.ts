@@ -1,4 +1,4 @@
-import { Injectable, Logger, ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, ConflictException, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -14,7 +14,9 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto) {
     try {
-      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+      const hashedPassword = createUserDto.password 
+        ? await bcrypt.hash(createUserDto.password, 10)
+        : undefined;
       return await this.prisma.user.create({
         data: { 
           ...createUserDto,
@@ -24,6 +26,7 @@ export class UsersService {
           id: true,
           email: true,
           name: true,
+          lastName: true,
           enable: true,
           password: false,
         },
@@ -46,6 +49,7 @@ export class UsersService {
           id: true,
           email: true,
           name: true,
+          lastName: true,
           enable: true,
           password: false,
         },
@@ -64,6 +68,7 @@ export class UsersService {
           id: true,
           email: true,
           name: true,
+          lastName: true,
           enable: true,
           isOnboardingCompleted: true,
           password: false,
@@ -93,6 +98,7 @@ export class UsersService {
           id: true,
           email: true,
           name: true,
+          lastName: true,
           enable: true,
           password: false,
         },
@@ -142,6 +148,10 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
 
+      if (!user.password) {
+        throw new BadRequestException('Cannot change password for Google OAuth users');
+      }
+
       // Verificar que la contraseña actual es correcta
       const isPasswordValid = await bcrypt.compare(
         changePasswordDto.currentPassword,
@@ -175,7 +185,8 @@ export class UsersService {
     } catch (error) {
       if (error instanceof NotFoundException || 
           error instanceof UnauthorizedException || 
-          error instanceof ConflictException) {
+          error instanceof ConflictException ||
+          error instanceof BadRequestException) {
         throw error;
       }
       this.logger.error(`Error changing password for user ${id}`, error.stack);
