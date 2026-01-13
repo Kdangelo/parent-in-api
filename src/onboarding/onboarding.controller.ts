@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Put, Patch, Body, Request, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Patch, Body, Request, UseGuards, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OnboardingService } from './onboarding.service';
 import { OnboardingNotCompletedGuard } from './guards/onboarding-not-completed.guard';
 import { OnboardingCompletedGuard } from './guards/onboarding-completed.guard';
-import { OnboardingStartDto } from './dto/onboarding-start.dto';
+import { UserDataDto } from './dto/user-data.dto';
+import { ParentalUserDto } from './dto/parental-user.dto';
 import { StageDetailsDto } from './dto/stage-details.dto';
 import { LearningTopicsDto } from './dto/learning-topics.dto';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
@@ -35,18 +36,37 @@ export class OnboardingController {
 
   /**
    * POST /onboarding/start
-   * Paso 1: Identidad + Familia + Etapa
+   * Paso 1: Datos generales del usuario (birthday, city, country, genre, phone, userType)
    * Solo accesible si NO completó onboarding
    */
   @Post('start')
   @UseGuards(OnboardingNotCompletedGuard)
-  @ApiOperation({ summary: 'Iniciar proceso de onboarding - Paso 1: Identidad, Familia y Etapa' })
-  @ApiResponse({ status: 201, description: 'Onboarding iniciado exitosamente' })
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Iniciar proceso de onboarding - Paso 1: Guardar datos del usuario' })
+  @ApiBody({ type: UserDataDto })
+  @ApiResponse({ status: 201, description: 'Paso 1 completado' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
-  async start(@Request() req, @Body() dto: OnboardingStartDto) {
+  async start(@Request() req, @Body() dto: UserDataDto) {
     return this.onboardingService.start(req.user.id, dto);
+  }
+
+  /**
+   * POST /onboarding/parental
+   * Paso 2: Datos parentales (solo para userType = parental)
+   */
+  @Post('parental')
+  @UseGuards(OnboardingNotCompletedGuard)
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Guardar datos parentales (Paso 2)' })
+  @ApiBody({ type: ParentalUserDto })
+  @ApiResponse({ status: 201, description: 'Paso 2 (parenteral) guardado' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no parental' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
+  async saveParental(@Request() req, @Body() dto: ParentalUserDto) {
+    return this.onboardingService.saveParentalData(req.user.id, dto);
   }
 
   /**
