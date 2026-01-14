@@ -1,10 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OnboardingStartDto } from './dto/onboarding-start.dto';
 import { StageDetailsDto } from './dto/stage-details.dto';
 import { LearningTopicsDto } from './dto/learning-topics.dto';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import { StageTransitionDto } from './dto/stage-transition.dto';
+import { UserDataDto } from './dto/user-data.dto';
+import { ParentalUserDto } from './dto/parental-user.dto';
 
 @Injectable()
 export class OnboardingService {
@@ -32,29 +33,72 @@ export class OnboardingService {
 
   /**
    * POST /onboarding/start
-   * Paso 1: Guardar identidad, familia y etapa
+   * Paso 1: Guardar datos generales del usuario
    */
-  async start(userId: string, dto: OnboardingStartDto) {
+  async start(userId: string, dto: UserDataDto) {
     const onboarding = await this.prisma.onboardingResponses.upsert({
       where: { userId },
       create: {
         userId,
-        userRole: dto.userRole,
-        familyType: dto.familyType,
-        familyTypeOther: dto.familyTypeOther || null,
-        currentStage: dto.currentStage,
+        city: dto.city,
+        country: dto.country,
+        genre: dto.genre,
+        phone: dto.phone,
+        userType: dto.userType,
       },
       update: {
-        userRole: dto.userRole,
-        familyType: dto.familyType,
-        familyTypeOther: dto.familyTypeOther || null,
-        currentStage: dto.currentStage,
+        city: dto.city,
+        country: dto.country,
+        genre: dto.genre,
+        phone: dto.phone,
+        userType: dto.userType,
       },
     });
 
     return {
       message: 'Paso 1 completado',
       data: onboarding,
+    };
+  }
+
+  /**
+   * POST /onboarding/parental
+   * Paso 2 para usuarios parentales: datos parentales
+   */
+  async saveParentalData(userId: string, dto: ParentalUserDto) {
+    const onboarding = await this.prisma.onboardingResponses.findUnique({ where: { userId } });
+
+    if (!onboarding) throw new BadRequestException('Debes completar Paso 1 primero');
+
+    if (onboarding.userType !== 'parental') {
+      throw new BadRequestException('Solo usuarios parentales pueden enviar datos parentales');
+    }
+
+    // Map parentalStage string to StageEnum
+    const stageMap = {
+      preLicencia: 'PRE_LICENSE',
+      licencia: 'LICENSE',
+      postLicencia: 'POST_LICENSE',
+    } as const;
+
+    const stage = (stageMap as any)[dto.parentalStage];
+
+    const updated = await this.prisma.onboardingResponses.update({
+      where: { userId },
+      data: {
+        currentEmploymentStatus: dto.currentEmploymentStatus,
+        jobRole: dto.currentRole,
+        familyType: dto.familyType as any,
+        numberOfChildren: dto.numberOfChildren,
+        organizationType: dto.organizationType,
+        currentStage: stage,
+        userDescription: dto.userDescription,
+      },
+    });
+
+    return {
+      message: 'Paso 2 (parenteral) guardado',
+      data: updated,
     };
   }
 
@@ -71,12 +115,33 @@ export class OnboardingService {
       throw new BadRequestException('Debes completar Paso 1 primero');
     }
 
+    if (onboarding.userType !== 'parental') {
+      throw new BadRequestException('Paso 2 (detalles de etapa) solo aplica para usuarios parentales');
+    }
+
+    // Verificar que los campos enviados correspondan a la etapa actual
+    const stage = onboarding.currentStage as string;
+
+    // If client sends fields that don't belong to current stage, reject
+    if ((dto.trimester || dto.estimatedDueDate) && stage !== 'PRE_LICENSE') {
+      throw new BadRequestException('Los datos de pre-licencia no corresponden a la etapa actual');
+    }
+
+    if ((dto.babyBirthDate || dto.licenseDuration || dto.licenseDurationOther) && stage !== 'LICENSE') {
+      throw new BadRequestException('Los datos de licencia no corresponden a la etapa actual');
+    }
+
+    if ((dto.returnDate || dto.workModality || dto.workModalityOther) && stage !== 'POST_LICENSE') {
+      throw new BadRequestException('Los datos de post-licencia no corresponden a la etapa actual');
+    }
+
     // Actualizar datos específicos por etapa
     const updateData: any = {};
 
     if (dto.trimester) updateData.trimester = dto.trimester;
     if (dto.estimatedDueDate) updateData.estimatedDueDate = new Date(dto.estimatedDueDate);
     if (dto.babyBirthDate) updateData.babyBirthDate = new Date(dto.babyBirthDate);
+    if (dto.returnDate) updateData.returnDate = new Date(dto.returnDate);
     if (dto.licenseDuration) updateData.licenseDuration = dto.licenseDuration;
     if (dto.licenseDurationOther) updateData.licenseDurationOther = dto.licenseDurationOther;
     if (dto.workModality) updateData.workModality = dto.workModality;

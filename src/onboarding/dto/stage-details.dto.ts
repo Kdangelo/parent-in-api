@@ -67,6 +67,15 @@ export class StageDetailsDto {
   workModality?: WorkModalityEnum;
 
   @ApiPropertyOptional({
+    description: 'Fecha de regreso al trabajo (solo para POST_LICENSE)',
+    example: '2024-09-01',
+    format: 'date',
+  })
+  @IsOptional()
+  @IsDateString()
+  returnDate?: string;
+
+  @ApiPropertyOptional({
     description: 'Descripción de la modalidad de trabajo cuando se selecciona OTHER (solo para POST_LICENSE)',
     example: 'Trabajo por proyectos',
     maxLength: 200,

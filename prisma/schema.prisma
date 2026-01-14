@@ -49,6 +49,22 @@ model OnboardingResponses {
   licenseDurationOther    String?
   workModality            WorkModalityEnum?
   workModalityOther       String?
+
+  // User data for step 1
+  birthday                DateTime?
+  city                    String?
+  country                 String?
+  genre                   String?
+  phone                   String?
+  userType                String?
+
+  // Parental specific fields (step 2)
+  currentEmploymentStatus String?
+  jobRole                 String?
+  numberOfChildren        String?
+  organizationType        String?
+  userDescription         String?
+
   learningTopics          String[]             @default([])
   preLicenseSupportNeeds  String[]             @default([])
   licenseSupportNeeds     String[]             @default([])
