@@ -5,7 +5,7 @@ import { LicenseDurationEnum } from '../enums/license-duration.enum';
 import { WorkModalityEnum } from '../enums/work-modality.enum';
 
 /**
- * Paso 2: Completar datos según etapa
+ * Paso 2 + 3: Completar datos según etapa y finalizar onboarding con temas de aprendizaje
  */
 export class StageDetailsDto {
   // PRE_LICENSE
@@ -112,5 +112,16 @@ export class StageDetailsDto {
   @IsOptional()
   @IsArray()
   postLicenseSupportNeeds?: string[];
+
+  // Learning Topics (Paso 3 consolidado)
+  @ApiPropertyOptional({
+    description: 'Lista de temas de aprendizaje de interés (finaliza el onboarding)',
+    type: [String],
+    example: ['Nutrición infantil', 'Desarrollo cognitivo', 'Primeros auxilios'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  learningTopics?: string[];
 }
 

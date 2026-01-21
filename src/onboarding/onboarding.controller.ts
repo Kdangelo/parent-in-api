@@ -7,7 +7,6 @@ import { OnboardingCompletedGuard } from './guards/onboarding-completed.guard';
 import { UserDataDto } from './dto/user-data.dto';
 import { ParentalUserDto } from './dto/parental-user.dto';
 import { StageDetailsDto } from './dto/stage-details.dto';
-import { LearningTopicsDto } from './dto/learning-topics.dto';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import { StageTransitionDto } from './dto/stage-transition.dto';
 
@@ -71,36 +70,19 @@ export class OnboardingController {
 
   /**
    * PUT /onboarding/stage-details
-   * Paso 2: Datos específicos según etapa (trimestre, fecha, etc) + necesidades de apoyo
+   * Paso 2 + 3: Datos específicos según etapa + temas de aprendizaje (finaliza onboarding)
    * Solo accesible si NO completó onboarding
    */
   @Put('stage-details')
   @UseGuards(OnboardingNotCompletedGuard)
-  @ApiOperation({ summary: 'Actualizar detalles de la etapa - Paso 2: Datos específicos según etapa' })
-  @ApiResponse({ status: 200, description: 'Detalles de la etapa actualizados exitosamente' })
+  @ApiOperation({ summary: 'Completar onboarding - Paso 2+3: Datos de etapa y temas de aprendizaje' })
+  @ApiResponse({ status: 200, description: 'Onboarding completado exitosamente' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
   @ApiResponse({ status: 404, description: 'Onboarding no encontrado' })
   async updateStageDetails(@Request() req, @Body() dto: StageDetailsDto) {
     return this.onboardingService.updateStageDetails(req.user.id, dto);
-  }
-
-  /**
-   * PUT /onboarding/learning-topics
-   * Paso 3: Temas de aprendizaje y FINALIZAR onboarding
-   * Solo accesible si NO completó onboarding
-   */
-  @Put('learning-topics')
-  @UseGuards(OnboardingNotCompletedGuard)
-  @ApiOperation({ summary: 'Finalizar onboarding - Paso 3: Temas de aprendizaje' })
-  @ApiResponse({ status: 200, description: 'Onboarding completado exitosamente' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
-  @ApiResponse({ status: 404, description: 'Onboarding no encontrado' })
-  async finalize(@Request() req, @Body() dto: LearningTopicsDto) {
-    return this.onboardingService.finalize(req.user.id, dto);
   }
 
   // ========================================

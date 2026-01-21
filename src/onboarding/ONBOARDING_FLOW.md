@@ -2,18 +2,17 @@
 
 ## Descripción General
 
-El flujo de onboarding de Parent-in consta de **3 pasos principales**:
+El flujo de onboarding de Parent-in consta de **2 pasos principales**:
 
-1. **Paso 1 (START)**: Datos generales del usuario
-2. **Paso 2**: Datos específicos según tipo de usuario y etapa
-3. **Paso 3**: Selección de temas de aprendizaje (finalización)
+1. **Paso 1 (START)**: Datos generales del usuario + tipo de usuario
+2. **Paso 2**: Datos parentales y específicos según etapa + temas de aprendizaje (finalización)
 
 ---
 
 ## 🔄 Flujo Detallado
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│ ONBOARDING FLOW - PARENT-IN API │
+│ ONBOARDING FLOW - PARENT-IN API (SIMPLIFICADO) │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────┐
@@ -21,6 +20,7 @@ El flujo de onboarding de Parent-in consta de **3 pasos principales**:
 │ POST /start │
 │ (UserDataDto) │
 ├──────────────────┤
+│ • birthday │
 │ • city │
 │ • country │
 │ • genre │
@@ -73,11 +73,11 @@ PRE_LICENSE LICENSE POST_LICENSE
 └─────────────┴──────────────┴──────────────┐
 │
 ▼
-┌───────────────────────┐
-│ PASO 2-FINAL: │
+┌───────────────────────────────────────────┐
+│ PASO 2-FINAL (CONSOLIDADO): │
 │ PUT /stage-details │
-│ (StageDetailsDto) │
-└───────────────────────┘
+│ (StageDetailsDto + LearningTopicsDto) │
+└───────────────────────────────────────────┘
 │
 ┌───────────┴────────────────────┐
 │ │
@@ -93,16 +93,12 @@ PRE_LICENSE: LICENSE: POST_LICENSE:
 │ │ │
 └───────────────────┼────────────────────┘
 │
-▼
-┌─────────────────────────────┐
-│ PASO 3: LEARNING TOPICS │
-│ PUT /learning-topics │
-│ (LearningTopicsDto) │
-└─────────────────────────────┘
+▼ (SIEMPRE envía learning topics aquí)
 │
-┌───────────┴──────────────┐
-│ │
-│ ALMACENA: │
+└──────────────────────────┐
+│
+▼
+┌──────────────────────────────────┐
 │ • learningTopics[] │
 │ (array de temas) │
 │ │
@@ -110,7 +106,7 @@ PRE_LICENSE: LICENSE: POST_LICENSE:
 │ is_onboarding_ │
 │ completed = TRUE │
 │ │
-└──────────────────────────┘
+└──────────────────────────────────┘
 
 
 
@@ -120,10 +116,9 @@ PRE_LICENSE: LICENSE: POST_LICENSE:
 
 | Paso | Endpoint | Método | DTOs | Descripción |
 |------|----------|--------|------|-------------|
-| **1** | `/onboarding/start` | `POST` | `UserDataDto` | Datos generales (ciudad, país, género, teléfono, tipo de usuario) |
+| **1** | `/onboarding/start` | `POST` | `UserDataDto` | Datos generales (birthday, ciudad, país, género, teléfono, tipo de usuario) |
 | **2a** | `/onboarding/parental` | `POST` | `ParentalUserDto` | Datos parentales (solo si `userType = parental`) |
-| **2b** | `/onboarding/stage-details` | `PUT` | `StageDetailsDto` | Datos específicos según etapa (PRE_LICENSE, LICENSE, POST_LICENSE) |
-| **3** | `/onboarding/learning-topics` | `PUT` | `LearningTopicsDto` | Temas de aprendizaje y **finalización** del onboarding |
+| **2b** | `/onboarding/stage-details` | `PUT` | `StageDetailsDto + learningTopics` | Datos de etapa + temas de aprendizaje, **finaliza onboarding** |
 
 ---
 
@@ -138,15 +133,13 @@ PRE_LICENSE: LICENSE: POST_LICENSE:
 - Almacena datos laborales y familiares
 
 ### Paso 2B: STAGE-DETAILS (Detalles por etapa)
+- **Solo envía campos de tu+ LEARNING-TOPICS (Consolidado)
 - **Solo envía campos de tu etapa actual**:
   - **PRE_LICENSE**: `trimester`, `estimatedDueDate`, `preLicenseSupportNeeds`
   - **LICENSE**: `babyBirthDate`, `licenseDuration`, `licenseSupportNeeds`
   - **POST_LICENSE**: `returnDate`, `workModality`, `postLicenseSupportNeeds`
-
-### Paso 3: LEARNING-TOPICS (Finalización)
-- Selecciona temas de interés
-- **Marca el onboarding como completado** (`is_onboarding_completed = TRUE`)
-
+- **SIEMPRE incluye**: `learningTopics` (array de temas de interés)
+- **Marca el onboarding como completado** automáticamente
 ---
 
 ## 🚀 Guardias de Acceso
