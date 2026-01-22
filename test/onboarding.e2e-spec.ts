@@ -39,11 +39,13 @@ describe('Onboarding flow (e2e)', () => {
   });
 
   afterAll(async () => {
-    if (prisma) await prisma.user.deleteMany({ where: { email: 'test+onb@example.com' } });
+    if (prisma) {
+      await prisma.user.deleteMany({ where: { email: { contains: 'test+' } } });
+    }
     await app.close();
   });
 
-  it('should complete onboarding flow for parental user', async () => {
+  it('should complete onboarding flow for parental user - PRE_LICENSE', async () => {
     // helper to add authorization header simulating JWT guard
     const authHeader = { 'x-user-id': userId };
 
@@ -104,5 +106,60 @@ describe('Onboarding flow (e2e)', () => {
     // Status should be completed
     const status = await request(app.getHttpServer()).get('/onboarding/status').set(authHeader).expect(200);
     expect(status.body.isOnboardingCompleted).toBe(true);
+  }, 20000);
+
+  it('should complete onboarding flow for parental user - POST_LICENSE', async () => {
+    // Create a new user for POST_LICENSE flow with unique email
+    const timestamp = Date.now();
+    const user = await prisma.user.create({ data: { email: `test+post-lic-${timestamp}@example.com`, name: 'Post License Test', password: '' } });
+    const authHeader = { 'x-user-id': user.id };
+
+    // Step 1: user data
+    await request(app.getHttpServer())
+      .post('/onboarding/start')
+      .set(authHeader)
+      .send({
+        birthday: '1988-05-15',
+        city: 'Madrid',
+        country: 'España',
+        genre: 'F',
+        phone: '987654321',
+        userType: 'parental',
+      })
+      .expect(201);
+
+    // Step 2: parental data - POST_LICENSE stage
+    await request(app.getHttpServer())
+      .post('/onboarding/parental')
+      .set(authHeader)
+      .send({
+        currentEmploymentStatus: 'Employed',
+        currentRole: 'Product Manager',
+        familyType: 'PADRE',
+        numberOfChildren: '2',
+        organizationType: 'Startup',
+        parentalStage: 'postLicencia',
+        userDescription: 'padre activo',
+      })
+      .expect(201);
+
+    // Step 3: POST_LICENSE stage-specific details
+    const step3 = await request(app.getHttpServer())
+      .put('/onboarding/stage-details')
+      .set(authHeader)
+      .send({
+        returnDate: '2026-02-01',
+        workModality: 'FULL_TIME_HYBRID',
+        postLicenseSupportNeeds: ['Flexible schedule', 'Mental health support', 'Work-life balance'],
+      })
+      .expect(200);
+
+    expect(step3.body.message).toMatch(/Detalles de la etapa actualizados/i);
+    expect(step3.body.data.is_onboarding_completed).toBe(true);
+    expect(step3.body.data.returnDate).toBeDefined();
+    expect(step3.body.data.workModality).toBe('FULL_TIME_HYBRID');
+
+    // Cleanup
+    await prisma.user.delete({ where: { id: user.id } });
   }, 20000);
 });
