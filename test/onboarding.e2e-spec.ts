@@ -80,7 +80,7 @@ describe('Onboarding flow (e2e)', () => {
 
     expect(step2.body.data.currentEmploymentStatus).toBe('Employed');
 
-    // Step 2 stage-specific details (PRE_LICENSE) - valid
+    // Step 2 stage-specific details (PRE_LICENSE) - valid and finalize
     const step2details = await request(app.getHttpServer())
       .put('/onboarding/stage-details')
       .set(authHeader)
@@ -91,21 +91,15 @@ describe('Onboarding flow (e2e)', () => {
       })
       .expect(200);
 
+    expect(step2details.body.message).toMatch(/Detalles de la etapa actualizados/i);
+    expect(step2details.body.data.is_onboarding_completed).toBe(true);
+
     // Negative case: try to send LICENSE data while on PRE_LICENSE -> expect 400
     await request(app.getHttpServer())
       .put('/onboarding/stage-details')
       .set(authHeader)
       .send({ babyBirthDate: '2026-06-01', licenseDuration: 'THREE_TO_6_MONTHS' })
       .expect(400);
-
-    // Finalize
-    const finalize = await request(app.getHttpServer())
-      .put('/onboarding/learning-topics')
-      .set(authHeader)
-      .send({ learningTopics: ['Work-life balance'] })
-      .expect(200);
-
-    expect(finalize.body.message).toMatch(/Onboarding completado/i);
 
     // Status should be completed
     const status = await request(app.getHttpServer()).get('/onboarding/status').set(authHeader).expect(200);

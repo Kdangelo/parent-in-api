@@ -75,7 +75,6 @@ export class OnboardingService {
       throw new BadRequestException('Solo usuarios parentales pueden enviar datos parentales');
     }
 
-    // Map parentalStage string to StageEnum
     const stageMap = {
       preLicencia: 'PRE_LICENSE',
       licencia: 'LICENSE',
@@ -124,7 +123,6 @@ export class OnboardingService {
     // Verificar que los campos enviados correspondan a la etapa actual
     const stage = onboarding.currentStage as string;
 
-    // If client sends fields that don't belong to current stage, reject
     if ((dto.trimester || dto.estimatedDueDate) && stage !== 'PRE_LICENSE') {
       throw new BadRequestException('Los datos de pre-licencia no corresponden a la etapa actual');
     }
@@ -152,9 +150,18 @@ export class OnboardingService {
     if (dto.licenseSupportNeeds) updateData.licenseSupportNeeds = dto.licenseSupportNeeds;
     if (dto.postLicenseSupportNeeds) updateData.postLicenseSupportNeeds = dto.postLicenseSupportNeeds;
 
+    // Marcar onboarding como completado
+    updateData.is_onboarding_completed = true;
+    updateData.completedAt = new Date();
+
     const updated = await this.prisma.onboardingResponses.update({
       where: { userId },
       data: updateData,
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isOnboardingCompleted: true },
     });
 
     return {
