@@ -112,16 +112,5 @@ export class StageDetailsDto {
   @IsOptional()
   @IsArray()
   postLicenseSupportNeeds?: string[];
-
-  // Learning Topics (Paso 3 consolidado)
-  @ApiPropertyOptional({
-    description: 'Lista de temas de aprendizaje de interés (finaliza el onboarding)',
-    type: [String],
-    example: ['Nutrición infantil', 'Desarrollo cognitivo', 'Primeros auxilios'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  learningTopics?: string[];
 }
 

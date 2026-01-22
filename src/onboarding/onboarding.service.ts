@@ -152,30 +152,13 @@ export class OnboardingService {
     if (dto.licenseSupportNeeds) updateData.licenseSupportNeeds = dto.licenseSupportNeeds;
     if (dto.postLicenseSupportNeeds) updateData.postLicenseSupportNeeds = dto.postLicenseSupportNeeds;
 
-    // Si se envían learning topics, marcar onboarding como completado
-    if (dto.learningTopics && dto.learningTopics.length > 0) {
-      updateData.learningTopics = dto.learningTopics;
-      updateData.is_onboarding_completed = true;
-      updateData.completedAt = new Date();
-    }
-
     const updated = await this.prisma.onboardingResponses.update({
       where: { userId },
       data: updateData,
     });
 
-    // Si se completó onboarding, actualizar User.isOnboardingCompleted
-    if (dto.learningTopics && dto.learningTopics.length > 0) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { isOnboardingCompleted: true },
-      });
-    }
-
     return {
-      message: dto.learningTopics && dto.learningTopics.length > 0 
-        ? '¡Bienvenida! Onboarding completado' 
-        : 'Detalles de la etapa actualizados',
+      message: 'Detalles de la etapa actualizados',
       data: updated,
     };
   }
