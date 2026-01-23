@@ -1,7 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StageDetailsDto } from './dto/stage-details.dto';
-import { LearningTopicsDto } from './dto/learning-topics.dto';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import { StageTransitionDto } from './dto/stage-transition.dto';
 import { UserDataDto } from './dto/user-data.dto';
@@ -40,6 +39,7 @@ export class OnboardingService {
       where: { userId },
       create: {
         userId,
+        birthday: new Date(dto.birthday),
         city: dto.city,
         country: dto.country,
         genre: dto.genre,
@@ -47,6 +47,7 @@ export class OnboardingService {
         userType: dto.userType,
       },
       update: {
+        birthday: new Date(dto.birthday),
         city: dto.city,
         country: dto.country,
         genre: dto.genre,
@@ -74,7 +75,6 @@ export class OnboardingService {
       throw new BadRequestException('Solo usuarios parentales pueden enviar datos parentales');
     }
 
-    // Map parentalStage string to StageEnum
     const stageMap = {
       preLicencia: 'PRE_LICENSE',
       licencia: 'LICENSE',
@@ -104,7 +104,8 @@ export class OnboardingService {
 
   /**
    * PUT /onboarding/stage-details
-   * Paso 2: Guardar datos específicos según etapa + necesidades de apoyo
+   * Paso 2 + 3: Guardar datos específicos según etapa + temas de aprendizaje
+   * FINALIZA el onboarding
    */
   async updateStageDetails(userId: string, dto: StageDetailsDto) {
     const onboarding = await this.prisma.onboardingResponses.findUnique({
@@ -122,7 +123,6 @@ export class OnboardingService {
     // Verificar que los campos enviados correspondan a la etapa actual
     const stage = onboarding.currentStage as string;
 
-    // If client sends fields that don't belong to current stage, reject
     if ((dto.trimester || dto.estimatedDueDate) && stage !== 'PRE_LICENSE') {
       throw new BadRequestException('Los datos de pre-licencia no corresponden a la etapa actual');
     }
@@ -135,7 +135,7 @@ export class OnboardingService {
       throw new BadRequestException('Los datos de post-licencia no corresponden a la etapa actual');
     }
 
-    // Actualizar datos específicos por etapa
+    // Actualizar datos específicos por etapa + learning topics
     const updateData: any = {};
 
     if (dto.trimester) updateData.trimester = dto.trimester;
@@ -150,52 +150,25 @@ export class OnboardingService {
     if (dto.licenseSupportNeeds) updateData.licenseSupportNeeds = dto.licenseSupportNeeds;
     if (dto.postLicenseSupportNeeds) updateData.postLicenseSupportNeeds = dto.postLicenseSupportNeeds;
 
+    // Marcar onboarding como completado
+    updateData.is_onboarding_completed = true;
+    updateData.completedAt = new Date();
+
     const updated = await this.prisma.onboardingResponses.update({
       where: { userId },
       data: updateData,
     });
 
-    return {
-      message: 'Paso 2 completado',
-      data: updated,
-    };
-  }
-
-  /**
-   * PUT /onboarding/learning-topics
-   * Paso 3: Guardar temas de aprendizaje y MARCAR onboarding como completado
-   */
-  async finalize(userId: string, dto: LearningTopicsDto) {
-    const onboarding = await this.prisma.onboardingResponses.findUnique({
-      where: { userId },
-    });
-
-    if (!onboarding) {
-      throw new BadRequestException('Debes completar Paso 1 primero');
-    }
-
-    // Actualizar learning topics y marcar como completado
-    const updated = await this.prisma.onboardingResponses.update({
-      where: { userId },
-      data: {
-        learningTopics: dto.learningTopics,
-        is_onboarding_completed: true,
-        completedAt: new Date(),
-      },
-    });
-
-    // Actualizar User.isOnboardingCompleted
     await this.prisma.user.update({
       where: { id: userId },
       data: { isOnboardingCompleted: true },
     });
 
     return {
-      message: '¡Bienvenida! Onboarding completado',
+      message: 'Detalles de la etapa actualizados',
       data: updated,
     };
   }
-
   /**
    * GET /onboarding/data
    * Obtener datos guardados del onboarding

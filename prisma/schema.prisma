@@ -49,6 +49,7 @@ model OnboardingResponses {
   licenseDurationOther    String?
   workModality            WorkModalityEnum?
   workModalityOther       String?
+  returnDate              DateTime?
 
   // User data for step 1
   birthday                DateTime?
