@@ -171,6 +171,13 @@ export class AuthService {
         name: true,
         lastName: true,
         enable: true,
+        isOnboardingCompleted: true,
+        onboarding: {
+          select: {
+            currentStage: true,
+            is_onboarding_completed: true,
+          },
+        },
       },
     });
 
@@ -178,7 +185,15 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      lastName: user.lastName,
+      enable: user.enable,
+      isOnboardingCompleted: user.isOnboardingCompleted,
+      currentStage: user.onboarding?.currentStage || null,
+    };
   }
 
   async googleLogin(user: any) {
