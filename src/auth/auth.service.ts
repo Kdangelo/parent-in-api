@@ -176,6 +176,7 @@ export class AuthService {
           select: {
             currentStage: true,
             is_onboarding_completed: true,
+            phone: true,
           },
         },
       },
@@ -193,6 +194,7 @@ export class AuthService {
       enable: user.enable,
       isOnboardingCompleted: user.isOnboardingCompleted,
       currentStage: user.onboarding?.currentStage || null,
+      phone: user.onboarding?.phone || null,
     };
   }
 
