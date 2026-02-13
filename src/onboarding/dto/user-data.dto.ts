@@ -23,6 +23,6 @@ export class UserDataDto {
     phone: string;
 
     @IsString()
-    @ApiProperty({ enum: ['parental','company','professional'] })
-    userType: 'parental' | 'company' | 'professional';
-} 
+    @ApiProperty({ enum: ['parental','organization','professional'] })
+    userType: 'parental' | 'organization' | 'professional';
+}
