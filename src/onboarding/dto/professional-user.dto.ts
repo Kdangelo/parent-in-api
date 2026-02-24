@@ -5,13 +5,13 @@ import { Type } from 'class-transformer';
 export class ProfessionalUserDto {
   @IsUrl()
   @IsOptional()
-  @ApiProperty({ example: 'https://linkedin.com/in/username', required: false })
-  linkedinUrl?: string;
+  @ApiProperty({
+    example: 'https://linkedin.com/in/username',
+    description: 'URL to LinkedIn profile or cloud CV (same field)',
+    required: false,
+  })
+  linkedinOrCV?: string;
 
-  @IsUrl()
-  @IsOptional()
-  @ApiProperty({ example: 'https://example.com/cv.pdf', required: false })
-  cvUrl?: string;
 
   @IsArray()
   @IsString({ each: true })

@@ -123,7 +123,7 @@ Seguimiento de recordatorios semanales enviados.
 - currentInitiatives[], desiredInitiatives[], organizationalChallenges[]
 
 **Campos de Profesional:**
-- linkedinUrl, cvUrl
+- linkedinOrCV (LinkedIn o CV en la nube, un solo campo)
 - areasOfSpecialization[]
 - estimatedPricePerSession
 - motivation
@@ -202,7 +202,7 @@ POST /onboarding/organization/start
 }
 ```
 
-**Pasos 2-15: Pasos Intermedios** (Cada paso por separado)
+**Pasos 2-16: Pasos Intermedios** (Cada paso por separado)
 ```
 POST /onboarding/organization/step/2
 {
@@ -260,8 +260,7 @@ Respuesta:
 ```
 POST /onboarding/professional/complete
 {
-  "linkedinUrl": "https://linkedin.com/in/maria-garcia",
-  "cvUrl": "https://example.com/cv.pdf",
+  "linkedinOrCV": "https://linkedin.com/in/maria-garcia",
   "areasOfSpecialization": [
     "PSYCHOLOGY",
     "PARENTAL_COACHING",
@@ -283,8 +282,7 @@ GET /onboarding/professional
 
 Respuesta:
 {
-  "linkedinUrl": "https://linkedin.com/in/maria-garcia",
-  "cvUrl": "https://example.com/cv.pdf",
+  "linkedinOrCV": "https://linkedin.com/in/maria-garcia",
   "areasOfSpecialization": ["PSYCHOLOGY", "PARENTAL_COACHING", "LACTATION"],
   "estimatedPricePerSession": 150,
   "motivation": "Pasionada por acompañar a las madres..."
@@ -430,7 +428,7 @@ POST /onboarding/organization/start
 Paso 1: Inicializar organización
 
 POST /onboarding/organization/step/:step
-Paso 2-15: Guardar paso intermedio
+Paso 2-16: Guardar paso intermedio
 
 PUT /onboarding/organization/complete
 Paso 16: Completar organización
@@ -670,8 +668,7 @@ const user = { id: "user-123", email: "hr@acme.com" };
 
 // POST /onboarding/professional/complete
 {
-  "linkedinUrl": "https://linkedin.com/in/dra-maria-gonzalez",
-  "cvUrl": "https://storage.example.com/cv-maria.pdf",
+  "linkedinOrCV": "https://linkedin.com/in/dra-maria-gonzalez",
   "areasOfSpecialization": [
     "PSYCHOLOGY",
     "PERINATAL_PSYCHOLOGY",
@@ -692,8 +689,7 @@ const user = { id: "user-123", email: "hr@acme.com" };
 // GET /onboarding/professional
 // Response:
 {
-  "linkedinUrl": "https://linkedin.com/in/dra-maria-gonzalez",
-  "cvUrl": "https://storage.example.com/cv-maria.pdf",
+  "linkedinOrCV": "https://linkedin.com/in/dra-maria-gonzalez",
   "areasOfSpecialization": ["PSYCHOLOGY", "PERINATAL_PSYCHOLOGY", ...],
   "estimatedPricePerSession": 180,
   "motivation": "Especialista con 12 años..."

@@ -162,4 +162,133 @@ describe('Onboarding flow (e2e)', () => {
     // Cleanup
     await prisma.user.delete({ where: { id: user.id } });
   }, 20000);
+
+  it('should complete onboarding flow for organization user including step 16', async () => {
+    // create organization user
+    const orgUser = await prisma.user.create({ data: { email: `test+org-${Date.now()}@example.com`, name: 'Org Test', password: '' } });
+    const authHeader = { 'x-user-id': orgUser.id };
+
+    // Step 1: start with organization type
+    await request(app.getHttpServer())
+      .post('/onboarding/start')
+      .set(authHeader)
+      .send({
+        birthday: '1980-07-07',
+        city: 'Ciudad',
+        country: 'Pais',
+        genre: 'M',
+        phone: '5551234',
+        userType: 'organization',
+      })
+      .expect(201);
+
+    // organization initial data
+    await request(app.getHttpServer())
+      .post('/onboarding/organization/start')
+      .set(authHeader)
+      .send({
+        organizationName: 'Test Org',
+        organizationSize: 'SMALL',
+        organizationIndustry: 'Tech',
+        organizationRole: 'HR',
+      })
+      .expect(201);
+
+    // intermediate steps: just two as examples
+    await request(app.getHttpServer())
+      .post('/onboarding/organization/step/2')
+      .set(authHeader)
+      .send({ organizationIndustry: 'Tech' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/onboarding/organization/step/15')
+      .set(authHeader)
+      .send({ organizationalMaturity: 'definedPolicies' })
+      .expect(201);
+
+    // final step 16 via step endpoint
+    const final = await request(app.getHttpServer())
+      .post('/onboarding/organization/step/16')
+      .set(authHeader)
+      .send({ organizationalChallenges: ['productivity', 'burnout'] })
+      .expect(201);
+
+    expect(final.body.data.organizationalChallenges).toEqual([
+      'productivity',
+      'burnout',
+    ]);
+
+    const progress = await request(app.getHttpServer())
+      .get('/onboarding/organization/progress')
+      .set(authHeader)
+      .expect(200);
+
+    expect(progress.body.completedSteps).toBe(16);
+    expect(progress.body.isCompleted).toBe(true);
+
+    // cleanup
+    await prisma.user.delete({ where: { id: orgUser.id } });
+  }, 30000);
+
+  it('should complete professional profile using linkedinOrCV field', async () => {
+    const user = await prisma.user.create({ data: { email: `test+prof-${Date.now()}@example.com`, name: 'Prof Test', password: '' } });
+    const authHeader = { 'x-user-id': user.id };
+
+    // step 1: start with professional type
+    await request(app.getHttpServer())
+      .post('/onboarding/start')
+      .set(authHeader)
+      .send({
+        birthday: '1992-03-10',
+        city: 'Barcelona',
+        country: 'España',
+        genre: 'F',
+        phone: '444333222',
+        userType: 'professional',
+      })
+      .expect(201);
+
+    // step complete professional profile with single field
+    const profileData = {
+      linkedinOrCV: 'https://linkedin.com/in/prof-test',
+      areasOfSpecialization: ['PSYCHOLOGY'],
+      estimatedPricePerSession: 120,
+      motivation: 'Helping families',
+      yearsOfExperience: 4,
+    };
+
+    const completeResp = await request(app.getHttpServer())
+      .post('/onboarding/professional/complete')
+      .set(authHeader)
+      .send(profileData)
+      .expect(201);
+
+    expect(completeResp.body.data.linkedinUrl).toBe(profileData.linkedinOrCV);
+    expect(completeResp.body.data.cvUrl).toBe(profileData.linkedinOrCV);
+    expect(completeResp.body.data.is_onboarding_completed).toBe(true);
+
+    // get professional profile back
+    const getResp = await request(app.getHttpServer())
+      .get('/onboarding/professional')
+      .set(authHeader)
+      .expect(200);
+
+    expect(getResp.body.linkedinOrCV).toBe(profileData.linkedinOrCV);
+    expect(getResp.body.areasOfSpecialization).toEqual(profileData.areasOfSpecialization);
+
+    // update profile with new value
+    const newUrl = 'https://example.com/cv-prof.pdf';
+    const patchResp = await request(app.getHttpServer())
+      .patch('/onboarding/professional')
+      .set(authHeader)
+      .send({ linkedinOrCV: newUrl })
+      .expect(200);
+
+    expect(patchResp.body.data.linkedinUrl).toBe(newUrl);
+    expect(patchResp.body.data.cvUrl).toBe(newUrl);
+
+    // cleanup
+    await prisma.user.delete({ where: { id: user.id } });
+  }, 20000);
 });

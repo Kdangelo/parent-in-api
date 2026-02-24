@@ -260,7 +260,7 @@ export class OnboardingService {
 
   /**
    * POST /onboarding/organization/step/:step
-   * Guardar datos de pasos intermedios de la organización (2-15)
+   * Guardar datos de pasos intermedios de la organización (2-16)
    */
   async saveOrganizationStep(userId: string, stepNumber: number, dto: OrganizationStepsDto) {
     const onboarding = await this.prisma.onboardingResponses.findUnique({ where: { userId } });
@@ -270,8 +270,9 @@ export class OnboardingService {
       throw new BadRequestException('Solo usuarios de organizaciones pueden enviar datos organizacionales');
     }
 
-    if (stepNumber < 2 || stepNumber > 15) {
-      throw new BadRequestException('Paso debe estar entre 2 y 15');
+   
+    if (stepNumber < 2 || stepNumber > 16) {
+      throw new BadRequestException('Paso debe estar entre 2 y 16');
     }
 
     const updateData: any = {};
@@ -305,6 +306,10 @@ export class OnboardingService {
       if (dto.desiredInitiatives) updateData.desiredInitiatives = dto.desiredInitiatives;
     } else if (stepNumber === 15) {
       if (dto.organizationalMaturity) updateData.organizationalMaturity = dto.organizationalMaturity;
+    } else if (stepNumber === 16) {
+      if (dto.organizationalChallenges) updateData.organizationalChallenges = dto.organizationalChallenges;
+      updateData.is_onboarding_completed = true;
+      updateData.completedAt = new Date();
     }
 
     updateData.updatedAt = new Date();
@@ -313,6 +318,13 @@ export class OnboardingService {
       where: { userId },
       data: updateData,
     });
+
+    if (stepNumber === 16) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { isOnboardingCompleted: true },
+      });
+    }
 
     return {
       message: `Paso ${stepNumber} guardado`,
@@ -407,8 +419,8 @@ export class OnboardingService {
     }
 
     const updateData: any = {
-      linkedinUrl: dto.linkedinUrl,
-      cvUrl: dto.cvUrl,
+      linkedinUrl: dto.linkedinOrCV,
+      cvUrl: dto.linkedinOrCV,
       areasOfSpecialization: dto.areasOfSpecialization,
       estimatedPricePerSession: dto.estimatedPricePerSession,
       motivation: dto.motivation,
@@ -450,8 +462,7 @@ export class OnboardingService {
     }
 
     return {
-      linkedinUrl: onboarding.linkedinUrl,
-      cvUrl: onboarding.cvUrl,
+      linkedinOrCV: onboarding.linkedinUrl || onboarding.cvUrl,
       areasOfSpecialization: onboarding.areasOfSpecialization,
       estimatedPricePerSession: onboarding.estimatedPricePerSession,
       motivation: onboarding.motivation,
@@ -472,8 +483,10 @@ export class OnboardingService {
 
     const updateData: any = {};
 
-    if (dto.linkedinUrl !== undefined) updateData.linkedinUrl = dto.linkedinUrl;
-    if (dto.cvUrl !== undefined) updateData.cvUrl = dto.cvUrl;
+    if (dto.linkedinOrCV !== undefined) {
+      updateData.linkedinUrl = dto.linkedinOrCV;
+      updateData.cvUrl = dto.linkedinOrCV;
+    }
     if (dto.areasOfSpecialization) updateData.areasOfSpecialization = dto.areasOfSpecialization;
     if (dto.estimatedPricePerSession !== undefined) updateData.estimatedPricePerSession = dto.estimatedPricePerSession;
     if (dto.motivation !== undefined) updateData.motivation = dto.motivation;

@@ -173,12 +173,12 @@ export class OnboardingController {
 
   /**
    * POST /onboarding/organization/step/:step
-   * Guardar datos de pasos intermedios (2-15)
+   * Guardar datos de pasos intermedios (2-16)
    */
   @Post('organization/step/:step')
   @UseGuards(OnboardingNotCompletedGuard)
   @HttpCode(201)
-  @ApiOperation({ summary: 'Guardar datos de paso intermedio de organización (2-15)' })
+  @ApiOperation({ summary: 'Guardar datos de paso intermedio de organización (2-16)' })
   @ApiBody({ type: OrganizationStepsDto })
   @ApiResponse({ status: 201, description: 'Paso guardado' })
   @ApiResponse({ status: 400, description: 'Datos inválidos o paso inválido' })
