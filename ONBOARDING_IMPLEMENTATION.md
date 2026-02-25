@@ -189,48 +189,30 @@ PUT /onboarding/stage-details
 
 ---
 
-### 2. Flujo Organización (16 Pasos)
+### 2. Flujo Organización (16 preguntas completas en un solo envío)
 
-**Paso 1: Inicializar**
+El frontend recopila las respuestas a las 16 preguntas
+organización y las envía **una sola vez** al final de la interacción.
+
+**Solicitud final**
 ```
-POST /onboarding/organization/start
+PUT /onboarding/organization/complete
 {
   "organizationName": "Acme Corp",
   "organizationSize": "LARGE",
   "organizationIndustry": "Tecnología / Software / SaaS",
-  "organizationRole": "Gerente de RRHH"
-}
-```
-
-**Pasos 2-16: Pasos Intermedios** (Cada paso por separado)
-```
-POST /onboarding/organization/step/2
-{
-  "organizationIndustry": "Tecnología / Software / SaaS"
-}
-
-POST /onboarding/organization/step/3
-{
-  "organizationSize": "LARGE"
-}
-
-POST /onboarding/organization/step/5
-{
-  "genderDistribution": "MAYORIA_FEMENINO"
-}
-
-POST /onboarding/organization/step/10
-{
-  "flexibilityScore": 4
-}
-
-// ... etc para todos los pasos
-```
-
-**Paso 16: Completar**
-```
-PUT /onboarding/organization/complete
-{
+  "organizationRole": "Gerente de RRHH",
+  "genderDistribution": "MAYORIA_FEMENINO",
+  "percentageMothers": "BETWEEN_21_AND_40",
+  "percentageFathers": "LESS_THAN_20",
+  "maternityLeaveDays": "legal",
+  "paternityLeaveDays": "BETWEEN_1_AND_7_DAYS",
+  "flexibilityScore": 4,
+  "workLifeBalanceScore": 3,
+  "emotionalSupportScore": 5,
+  "currentInitiatives": ["parentalLeave"],
+  "desiredInitiatives": ["workshops"],
+  "organizationalMaturity": "policiesAndProcesses",
   "organizationalChallenges": [
     "talentTurnover",
     "productivity",
@@ -239,6 +221,9 @@ PUT /onboarding/organization/complete
 }
 ```
 
+> **Nota:** el endpoint `POST /onboarding/organization/step/:step` está
+> obsoleto y ya no se utiliza. Toda la información se manda en la llamada anterior.
+
 **Obtener Progreso**
 ```
 GET /onboarding/organization/progress
@@ -246,8 +231,8 @@ GET /onboarding/organization/progress
 Respuesta:
 {
   "totalSteps": 16,
-  "completedSteps": 12,
-  "percentageComplete": 75,
+  "completedSteps": 16,
+  "percentageComplete": 100,
   "isCompleted": false
 }
 ```
@@ -424,14 +409,8 @@ Cambiar de etapa (post-completado)
 ### Flujo Organización
 
 ```
-POST /onboarding/organization/start
-Paso 1: Inicializar organización
-
-POST /onboarding/organization/step/:step
-Paso 2-16: Guardar paso intermedio
-
 PUT /onboarding/organization/complete
-Paso 16: Completar organización
+Enviar todas las respuestas de las 16 preguntas en un solo request
 
 GET /onboarding/organization/progress
 Obtener porcentaje de progreso
@@ -548,25 +527,23 @@ const user = { id: "user-123", email: "hr@acme.com" };
 }
 // Response: Onboarding iniciado
 
-// 3. POST /onboarding/organization/start
+// 3. PUT /onboarding/organization/complete
 {
   "organizationName": "TechCorp Argentina",
   "organizationSize": "LARGE",
   "organizationIndustry": "Tecnología / Software / SaaS",
-  "organizationRole": "HR Manager"
-}
-// Response: Paso 1 completado
-
-// 4. POST /onboarding/organization/step/2
-{
-  "organizationIndustry": "Tecnología / Software / SaaS"
-}
-// Response: Paso 2 guardado
-
-// ... continúa con pasos 3-15 ...
-
-// 5. PUT /onboarding/organization/complete
-{
+  "organizationRole": "HR Manager",
+  "genderDistribution": "EQUILIBRADA",
+  "percentageMothers": "BETWEEN_21_AND_40",
+  "percentageFathers": "LESS_THAN_20",
+  "maternityLeaveDays": "legal",
+  "paternityLeaveDays": "BETWEEN_1_AND_7_DAYS",
+  "flexibilityScore": 4,
+  "workLifeBalanceScore": 3,
+  "emotionalSupportScore": 5,
+  "currentInitiatives": ["parentalLeave"],
+  "desiredInitiatives": ["workshops"],
+  "organizationalMaturity": "policiesAndProcesses",
   "organizationalChallenges": [
     "talentTurnover",
     "productivity",
@@ -574,6 +551,15 @@ const user = { id: "user-123", email: "hr@acme.com" };
   ]
 }
 // Response: Onboarding completado ✅
+
+// 4. GET /onboarding/organization/progress
+// Response:
+{
+  "totalSteps": 16,
+  "completedSteps": 16,
+  "percentageComplete": 100,
+  "isCompleted": true
+}
 
 // 6. GET /onboarding/organization/progress
 // Response:

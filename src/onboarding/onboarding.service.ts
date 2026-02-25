@@ -258,11 +258,9 @@ export class OnboardingService {
     };
   }
 
-  /**
-   * POST /onboarding/organization/step/:step
-   * Guardar datos de pasos intermedios de la organización (2-16)
-   */
+  
   async saveOrganizationStep(userId: string, stepNumber: number, dto: OrganizationStepsDto) {
+
     const onboarding = await this.prisma.onboardingResponses.findUnique({ where: { userId } });
 
     if (!onboarding) throw new BadRequestException('Debes completar Paso 1 primero');
@@ -270,14 +268,13 @@ export class OnboardingService {
       throw new BadRequestException('Solo usuarios de organizaciones pueden enviar datos organizacionales');
     }
 
-   
     if (stepNumber < 2 || stepNumber > 16) {
       throw new BadRequestException('Paso debe estar entre 2 y 16');
     }
 
     const updateData: any = {};
 
-    // Map each step to its corresponding fields
+    // original mapping logic (unchanged)
     if (stepNumber === 2) {
       if (dto.organizationIndustry) updateData.organizationIndustry = dto.organizationIndustry;
     } else if (stepNumber === 3) {
@@ -334,7 +331,9 @@ export class OnboardingService {
 
   /**
    * PUT /onboarding/organization/complete
-   * Paso 16: Guardar desafíos y completar onboarding de organización
+   * Recibe el conjunto completo de respuestas de la organización. Cualquier campo
+   * que llegue se aplica al registro y finalmente marca el onboarding como
+   * completado.
    */
   async completeOrganizationOnboarding(userId: string, dto: OrganizationStepsDto) {
     const onboarding = await this.prisma.onboardingResponses.findUnique({ where: { userId } });
@@ -344,12 +343,30 @@ export class OnboardingService {
       throw new BadRequestException('Solo usuarios de organizaciones pueden completar este paso');
     }
 
-    const updateData: any = {
-      organizationalChallenges: dto.organizationalChallenges || [],
-      is_onboarding_completed: true,
-      completedAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const updateData: any = {};
+
+    
+    if (dto.organizationName) updateData.organizationName = dto.organizationName;
+    if (dto.organizationSize) updateData.organizationSize = dto.organizationSize;
+    if (dto.organizationIndustry) updateData.organizationIndustry = dto.organizationIndustry;
+    if (dto.organizationRole) updateData.organizationRole = dto.organizationRole;
+    if (dto.genderDistribution) updateData.genderDistribution = dto.genderDistribution;
+    if (dto.percentageMothers) updateData.percentageMothers = dto.percentageMothers;
+    if (dto.percentageFathers) updateData.percentageFathers = dto.percentageFathers;
+    if (dto.maternityLeaveDays) updateData.maternityLeaveDays = dto.maternityLeaveDays;
+    if (dto.paternityLeaveDays) updateData.paternityLeaveDays = dto.paternityLeaveDays;
+    if (dto.flexibilityScore !== undefined) updateData.flexibilityScore = dto.flexibilityScore;
+    if (dto.workLifeBalanceScore !== undefined) updateData.workLifeBalanceScore = dto.workLifeBalanceScore;
+    if (dto.emotionalSupportScore !== undefined) updateData.emotionalSupportScore = dto.emotionalSupportScore;
+    if (dto.currentInitiatives) updateData.currentInitiatives = dto.currentInitiatives;
+    if (dto.desiredInitiatives) updateData.desiredInitiatives = dto.desiredInitiatives;
+    if (dto.organizationalMaturity) updateData.organizationalMaturity = dto.organizationalMaturity;
+    if (dto.organizationalChallenges) updateData.organizationalChallenges = dto.organizationalChallenges;
+
+    // mark completion
+    updateData.is_onboarding_completed = true;
+    updateData.completedAt = new Date();
+    updateData.updatedAt = new Date();
 
     const updated = await this.prisma.onboardingResponses.update({
       where: { userId },
@@ -430,7 +447,8 @@ export class OnboardingService {
     };
 
     if (dto.yearsOfExperience !== undefined) {
-      updateData.numberOfChildren = dto.yearsOfExperience; // Reusing field for experience
+      // the underlying column is a string, so cast explicitly
+      updateData.numberOfChildren = dto.yearsOfExperience.toString(); // Reusing field for experience
     }
 
     const updated = await this.prisma.onboardingResponses.update({

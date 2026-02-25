@@ -171,34 +171,11 @@ export class OnboardingController {
     return this.onboardingService.startOrganizationOnboarding(req.user.id, dto);
   }
 
-  /**
-   * POST /onboarding/organization/step/:step
-   * Guardar datos de pasos intermedios (2-16)
-   */
-  @Post('organization/step/:step')
-  @UseGuards(OnboardingNotCompletedGuard)
-  @HttpCode(201)
-  @ApiOperation({ summary: 'Guardar datos de paso intermedio de organización (2-16)' })
-  @ApiBody({ type: OrganizationStepsDto })
-  @ApiResponse({ status: 201, description: 'Paso guardado' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos o paso inválido' })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
-  async saveOrganizationStep(
-    @Request() req,
-    @Param('step') step: string,
-    @Body() dto: OrganizationStepsDto,
-  ) {
-    return this.onboardingService.saveOrganizationStep(req.user.id, parseInt(step), dto);
-  }
 
-  /**
-   * PUT /onboarding/organization/complete
-   * Paso 16: Completar onboarding de organización
-   */
+  
   @Put('organization/complete')
   @UseGuards(OnboardingNotCompletedGuard)
-  @ApiOperation({ summary: 'Completar onboarding de organización - Paso 16' })
+  @ApiOperation({ summary: 'Enviar todos los datos de onboarding organizacional en un solo paso' })
   @ApiBody({ type: OrganizationStepsDto })
   @ApiResponse({ status: 200, description: 'Onboarding de organización completado' })
   @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no es de organización' })
