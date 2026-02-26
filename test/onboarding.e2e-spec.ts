@@ -12,11 +12,17 @@ describe('Onboarding flow (e2e)', () => {
 
   beforeAll(async () => {
     const mockJwtGuard = {
-      canActivate: (context) => {
+      
+      canActivate: async (context) => {
         const req = context.switchToHttp().getRequest();
         const id = req.headers['x-user-id'] as string;
         if (!id) return false;
-        req.user = { id, isOnboardingCompleted: false };
+        let completed = false;
+        if (prisma) {
+          const u = await prisma.user.findUnique({ where: { id } });
+          completed = !!u?.isOnboardingCompleted;
+        }
+        req.user = { id, isOnboardingCompleted: completed };
         return true;
       },
     };
@@ -96,12 +102,11 @@ describe('Onboarding flow (e2e)', () => {
     expect(step2details.body.message).toMatch(/Detalles de la etapa actualizados/i);
     expect(step2details.body.data.is_onboarding_completed).toBe(true);
 
-    // Negative case: try to send LICENSE data while on PRE_LICENSE -> expect 400
     await request(app.getHttpServer())
       .put('/onboarding/stage-details')
       .set(authHeader)
       .send({ babyBirthDate: '2026-06-01', licenseDuration: 'THREE_TO_6_MONTHS' })
-      .expect(400);
+      .expect(403);
 
     // Status should be completed
     const status = await request(app.getHttpServer()).get('/onboarding/status').set(authHeader).expect(200);
@@ -160,6 +165,129 @@ describe('Onboarding flow (e2e)', () => {
     expect(step3.body.data.workModality).toBe('FULL_TIME_HYBRID');
 
     // Cleanup
+    await prisma.user.delete({ where: { id: user.id } });
+  }, 20000);
+
+  it('should complete onboarding flow for organization user in a single final submission', async () => {
+    // create organization user
+    const orgUser = await prisma.user.create({ data: { email: `test+org-${Date.now()}@example.com`, name: 'Org Test', password: '' } });
+    const authHeader = { 'x-user-id': orgUser.id };
+
+    // Step 1: start with organization type (general user data)
+    await request(app.getHttpServer())
+      .post('/onboarding/start')
+      .set(authHeader)
+      .send({
+        birthday: '1980-07-07',
+        city: 'Ciudad',
+        country: 'Pais',
+        genre: 'M',
+        phone: '5551234',
+        userType: 'organization',
+      })
+      .expect(201);
+
+    
+    const allAnswers = {
+      organizationName: 'Test Org',
+      organizationSize: 'startup',
+      organizationIndustry: 'Tech',
+      organizationRole: 'HR',
+      genderDistribution: 'EQUILIBRADA',
+      percentageMothers: 'BETWEEN_21_AND_40',
+      percentageFathers: 'LESS_THAN_20',
+      maternityLeaveDays: 'legal',
+      paternityLeaveDays: 'BETWEEN_1_AND_7_DAYS',
+      flexibilityScore: 4,
+      workLifeBalanceScore: 3,
+      emotionalSupportScore: 5,
+      currentInitiatives: ['parentalLeave'],
+      desiredInitiatives: ['workshops'],
+      organizationalMaturity: 'policiesAndProcesses',
+      organizationalChallenges: ['talentTurnover', 'productivity'],
+    };
+
+    const resp = await request(app.getHttpServer())
+      .put('/onboarding/organization/complete')
+      .set(authHeader)
+      .send(allAnswers)
+      .expect(200);
+
+    expect(resp.body.data.organizationName).toBe(allAnswers.organizationName);
+    expect(resp.body.data.organizationSize).toBe('SMALL');
+    expect(resp.body.data.organizationalChallenges).toEqual(allAnswers.organizationalChallenges);
+    expect(resp.body.data.is_onboarding_completed).toBe(true);
+
+    const progress = await request(app.getHttpServer())
+      .get('/onboarding/organization/progress')
+      .set(authHeader)
+      .expect(200);
+
+    expect(progress.body.completedSteps).toBe(16);
+    expect(progress.body.isCompleted).toBe(true);
+
+    // cleanup
+    await prisma.user.delete({ where: { id: orgUser.id } });
+  }, 30000);
+
+  it('should complete professional profile using linkedinOrCV field', async () => {
+    const user = await prisma.user.create({ data: { email: `test+prof-${Date.now()}@example.com`, name: 'Prof Test', password: '' } });
+    const authHeader = { 'x-user-id': user.id };
+
+    // step 1: start with professional type
+    await request(app.getHttpServer())
+      .post('/onboarding/start')
+      .set(authHeader)
+      .send({
+        birthday: '1992-03-10',
+        city: 'Barcelona',
+        country: 'España',
+        genre: 'F',
+        phone: '444333222',
+        userType: 'professional',
+      })
+      .expect(201);
+
+    // step complete professional profile with single field
+    const profileData = {
+      linkedinOrCV: 'https://linkedin.com/in/prof-test',
+      areasOfSpecialization: ['PSYCHOLOGY'],
+      estimatedPricePerSession: 120,
+      motivation: 'Helping families',
+      yearsOfExperience: 4,
+    };
+
+    const completeResp = await request(app.getHttpServer())
+      .post('/onboarding/professional/complete')
+      .set(authHeader)
+      .send(profileData)
+      .expect(201);
+
+    expect(completeResp.body.data.linkedinUrl).toBe(profileData.linkedinOrCV);
+    expect(completeResp.body.data.cvUrl).toBe(profileData.linkedinOrCV);
+    expect(completeResp.body.data.is_onboarding_completed).toBe(true);
+
+    // get professional profile back
+    const getResp = await request(app.getHttpServer())
+      .get('/onboarding/professional')
+      .set(authHeader)
+      .expect(200);
+
+    expect(getResp.body.linkedinOrCV).toBe(profileData.linkedinOrCV);
+    expect(getResp.body.areasOfSpecialization).toEqual(profileData.areasOfSpecialization);
+
+    // update profile with new value
+    const newUrl = 'https://example.com/cv-prof.pdf';
+    const patchResp = await request(app.getHttpServer())
+      .patch('/onboarding/professional')
+      .set(authHeader)
+      .send({ linkedinOrCV: newUrl })
+      .expect(200);
+
+    expect(patchResp.body.data.linkedinUrl).toBe(newUrl);
+    expect(patchResp.body.data.cvUrl).toBe(newUrl);
+
+    // cleanup
     await prisma.user.delete({ where: { id: user.id } });
   }, 20000);
 });

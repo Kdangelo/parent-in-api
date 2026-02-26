@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Request, UseGuards, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Request, UseGuards, HttpCode, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OnboardingService } from './onboarding.service';
@@ -9,6 +9,9 @@ import { ParentalUserDto } from './dto/parental-user.dto';
 import { StageDetailsDto } from './dto/stage-details.dto';
 import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import { StageTransitionDto } from './dto/stage-transition.dto';
+import { OrganizationUserDto } from './dto/organization-user.dto';
+import { OrganizationStepsDto } from './dto/organization-steps.dto';
+import { ProfessionalUserDto } from './dto/professional-user.dto';
 
 @ApiTags('onboarding')
 @ApiBearerAuth('JWT-auth')
@@ -145,6 +148,106 @@ export class OnboardingController {
   @ApiResponse({ status: 404, description: 'Onboarding no encontrado' })
   async transitionStage(@Request() req, @Body() dto: StageTransitionDto) {
     return this.onboardingService.transitionStage(req.user.id, dto);
+  }
+
+  // ========================================
+  // FLUJO ORGANIZACIÓN (16 pasos)
+  // ========================================
+
+  /**
+   * POST /onboarding/organization/start
+   * Paso 1: Guardar datos básicos de organización
+   */
+  @Post('organization/start')
+  @UseGuards(OnboardingNotCompletedGuard)
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Iniciar onboarding de organización - Paso 1' })
+  @ApiBody({ type: OrganizationUserDto })
+  @ApiResponse({ status: 201, description: 'Paso 1 (organización) completado' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no es de organización' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
+  async startOrganizationOnboarding(@Request() req, @Body() dto: OrganizationUserDto) {
+    return this.onboardingService.startOrganizationOnboarding(req.user.id, dto);
+  }
+
+
+  
+  @Put('organization/complete')
+  @UseGuards(OnboardingNotCompletedGuard)
+  @ApiOperation({ summary: 'Enviar todos los datos de onboarding organizacional en un solo paso' })
+  @ApiBody({ type: OrganizationStepsDto })
+  @ApiResponse({ status: 200, description: 'Onboarding de organización completado' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no es de organización' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
+  async completeOrganizationOnboarding(@Request() req, @Body() dto: OrganizationStepsDto) {
+    return this.onboardingService.completeOrganizationOnboarding(req.user.id, dto);
+  }
+
+  /**
+   * GET /onboarding/organization/progress
+   * Obtener progreso del onboarding de organización
+   */
+  @Get('organization/progress')
+  @ApiOperation({ summary: 'Obtener progreso del onboarding de organización' })
+  @ApiResponse({ status: 200, description: 'Progreso obtenido exitosamente' })
+  @ApiResponse({ status: 400, description: 'Usuario no es de organización' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Onboarding no encontrado' })
+  async getOrganizationProgress(@Request() req) {
+    return this.onboardingService.getOrganizationProgress(req.user.id);
+  }
+
+  // ========================================
+  // FLUJO PROFESIONAL
+  // ========================================
+
+  /**
+   * POST /onboarding/professional/complete
+   * Completar perfil profesional en un paso
+   */
+  @Post('professional/complete')
+  @UseGuards(OnboardingNotCompletedGuard)
+  @HttpCode(201)
+  @ApiOperation({ summary: 'Completar perfil profesional' })
+  @ApiBody({ type: ProfessionalUserDto })
+  @ApiResponse({ status: 201, description: 'Perfil profesional completado' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no es profesional' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'El onboarding ya fue completado' })
+  async completeProfessionalProfile(@Request() req, @Body() dto: ProfessionalUserDto) {
+    return this.onboardingService.completeProfessionalProfile(req.user.id, dto);
+  }
+
+  /**
+   * GET /onboarding/professional
+   * Obtener perfil profesional
+   */
+  @Get('professional')
+  @UseGuards(OnboardingCompletedGuard)
+  @ApiOperation({ summary: 'Obtener perfil profesional' })
+  @ApiResponse({ status: 200, description: 'Perfil profesional obtenido' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Perfil no encontrado' })
+  async getProfessionalProfile(@Request() req) {
+    return this.onboardingService.getProfessionalProfile(req.user.id);
+  }
+
+  /**
+   * PATCH /onboarding/professional
+   * Actualizar perfil profesional
+   */
+  @Patch('professional')
+  @UseGuards(OnboardingCompletedGuard)
+  @ApiOperation({ summary: 'Actualizar perfil profesional' })
+  @ApiBody({ type: ProfessionalUserDto })
+  @ApiResponse({ status: 200, description: 'Perfil profesional actualizado' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o usuario no es profesional' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Perfil no encontrado' })
+  async updateProfessionalProfile(@Request() req, @Body() dto: Partial<ProfessionalUserDto>) {
+    return this.onboardingService.updateProfessionalProfile(req.user.id, dto);
   }
 }
 

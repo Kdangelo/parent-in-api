@@ -66,6 +66,34 @@ model OnboardingResponses {
   organizationType        String?
   userDescription         String?
 
+  // Organization specific fields (16-step flow)
+  organizationName        String?
+  organizationSize        OrganizationSizeEnum?
+  organizationIndustry    String?
+  organizationRole        String?
+  organizationStage       OrganizationStageEnum?
+  genderDistribution      String?
+  percentageMothers       String?
+  percentageFathers       String?
+  maternityLeaveDays      String?
+  paternityLeaveDays      String?
+  flexibilityScore        Int?
+  workLifeBalanceScore    Int?
+  emotionalSupportScore   Int?
+  organizationalMaturity  String?
+
+  // Organization multiselect fields
+  currentInitiatives      String[]             @default([])
+  desiredInitiatives      String[]             @default([])
+  organizationalChallenges String[]             @default([])
+
+  // Professional specific fields
+  linkedinUrl             String?
+  cvUrl                   String?
+  areasOfSpecialization   String[]             @default([])
+  estimatedPricePerSession Decimal?
+  motivation              String?
+
   learningTopics          String[]             @default([])
   preLicenseSupportNeeds  String[]             @default([])
   licenseSupportNeeds     String[]             @default([])
@@ -75,8 +103,80 @@ model OnboardingResponses {
   completedAt             DateTime?
   updatedAt               DateTime             @updatedAt
   user                    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkInResponses        CheckInResponse[]
+  checkInScores           CheckInScore[]
+  checkInReminders        CheckInReminder[]
 
   @@map("onboarding_responses")
+}
+
+model CheckInQuestion {
+  id                String               @id @default(uuid())
+  stage             StageEnum
+  category          CheckInCategoryEnum
+  questionText      String
+  order             Int
+  active            Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@unique([stage, category, order])
+  @@map("check_in_questions")
+}
+
+model CheckInResponse {
+  id                  String               @id @default(uuid())
+  userId              String
+  onboardingResponseId String
+  stage               StageEnum
+  category            CheckInCategoryEnum
+  questionId          String
+  rating              Int                  // 1-5
+  weekNumber          Int
+  year                Int
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  onboardingResponse  OnboardingResponses  @relation(fields: [onboardingResponseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekNumber, year, category, questionId])
+  @@map("check_in_responses")
+}
+
+model CheckInScore {
+  id                  String               @id @default(uuid())
+  userId              String
+  onboardingResponseId String
+  stage               StageEnum
+  scoreType           String               // "work", "wellbeing", "home"
+  score               Decimal              // 1.0-5.0
+  trafficLight        TrafficLightEnum
+  weekStartDate       DateTime
+  weekNumber          Int
+  year                Int
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  onboardingResponse  OnboardingResponses  @relation(fields: [onboardingResponseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekNumber, year, scoreType])
+  @@map("check_in_scores")
+}
+
+model CheckInReminder {
+  id                  String               @id @default(uuid())
+  userId              String
+  onboardingResponseId String
+  weekNumber          Int
+  year                Int
+  sentAt              DateTime
+  completedAt         DateTime?
+  createdAt           DateTime             @default(now())
+
+  onboardingResponse  OnboardingResponses  @relation(fields: [onboardingResponseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekNumber, year])
+  @@map("check_in_reminders")
 }
 
 enum StageEnum {
@@ -122,4 +222,29 @@ enum WorkModalityEnum {
   PART_TIME_HYBRID
   PART_TIME_REMOTE
   OTHER
+}
+
+enum OrganizationSizeEnum {
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+enum OrganizationStageEnum {
+  STARTUP
+  SCALING
+  MATURE
+}
+
+enum CheckInCategoryEnum {
+  WORK
+  WELLBEING
+  HOME
+}
+
+enum TrafficLightEnum {
+  RED
+  YELLOW
+  GREEN
 }
