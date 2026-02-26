@@ -1,6 +1,14 @@
 import { IsString, IsInt, IsArray, IsOptional, IsEnum, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
+import { OrganizationSizeEnum } from '../enums/organization-size.enum';
+
+const legacySizeMap: Record<string, OrganizationSizeEnum> = {
+  startup: OrganizationSizeEnum.SMALL,
+  pyme: OrganizationSizeEnum.MEDIUM,
+  corporacion: OrganizationSizeEnum.LARGE,
+  'ong/orgpublico': OrganizationSizeEnum.ENTERPRISE,
+};
 
 export class OrganizationStepsDto {
   @IsOptional()
@@ -14,9 +22,15 @@ export class OrganizationStepsDto {
   organizationIndustry?: string;
 
   @IsOptional()
-  @IsString()
-  @ApiProperty({ enum: ['startup', 'pyme', 'corporacion', 'ong/orgpublico', 'otra'], required: false })
-  organizationSize?: string;
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return legacySizeMap[value] ?? value;
+    }
+    return value;
+  })
+  @IsEnum(OrganizationSizeEnum)
+  @ApiProperty({ example: 'SMALL', enum: OrganizationSizeEnum, required: false })
+  organizationSize?: OrganizationSizeEnum;
 
   @IsOptional()
   @IsString()
@@ -128,9 +142,4 @@ export class OrganizationStepsDto {
     description: 'Select up to 5 options'
   })
   organizationalChallenges?: string[];
-
-  @IsOptional()
-  @IsString()
-  @ApiProperty({ example: '1', required: false, description: 'Organization step number (1-16)' })
-  step?: string;
 }

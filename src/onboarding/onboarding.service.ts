@@ -8,6 +8,15 @@ import { ParentalUserDto } from './dto/parental-user.dto';
 import { OrganizationUserDto } from './dto/organization-user.dto';
 import { OrganizationStepsDto } from './dto/organization-steps.dto';
 import { ProfessionalUserDto } from './dto/professional-user.dto';
+import { OrganizationSizeEnum } from './enums/organization-size.enum';
+
+// fallback mapping for legacy values coming from the frontend
+const organizationSizeMap: Record<string, OrganizationSizeEnum> = {
+  startup: OrganizationSizeEnum.SMALL,
+  pyme: OrganizationSizeEnum.MEDIUM,
+  corporacion: OrganizationSizeEnum.LARGE,
+  'ong/orgpublico': OrganizationSizeEnum.ENTERPRISE,
+};
 
 @Injectable()
 export class OnboardingService {
@@ -246,7 +255,8 @@ export class OnboardingService {
       where: { userId },
       data: {
         organizationName: dto.organizationName,
-        organizationSize: dto.organizationSize,
+        organizationSize:
+          organizationSizeMap[dto.organizationSize] ?? dto.organizationSize,
         organizationIndustry: dto.organizationIndustry,
         organizationRole: dto.organizationRole,
       },
@@ -278,7 +288,9 @@ export class OnboardingService {
     if (stepNumber === 2) {
       if (dto.organizationIndustry) updateData.organizationIndustry = dto.organizationIndustry;
     } else if (stepNumber === 3) {
-      if (dto.organizationSize) updateData.organizationSize = dto.organizationSize;
+      if (dto.organizationSize)
+        updateData.organizationSize =
+          organizationSizeMap[dto.organizationSize] ?? dto.organizationSize;
     } else if (stepNumber === 4) {
       if (dto.organizationRole) updateData.organizationRole = dto.organizationRole;
     } else if (stepNumber === 5) {
@@ -347,7 +359,9 @@ export class OnboardingService {
 
     
     if (dto.organizationName) updateData.organizationName = dto.organizationName;
-    if (dto.organizationSize) updateData.organizationSize = dto.organizationSize;
+    if (dto.organizationSize)
+      updateData.organizationSize =
+        organizationSizeMap[dto.organizationSize] ?? dto.organizationSize;
     if (dto.organizationIndustry) updateData.organizationIndustry = dto.organizationIndustry;
     if (dto.organizationRole) updateData.organizationRole = dto.organizationRole;
     if (dto.genderDistribution) updateData.genderDistribution = dto.genderDistribution;

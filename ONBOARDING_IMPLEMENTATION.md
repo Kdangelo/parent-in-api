@@ -199,7 +199,7 @@ organización y las envía **una sola vez** al final de la interacción.
 PUT /onboarding/organization/complete
 {
   "organizationName": "Acme Corp",
-  "organizationSize": "LARGE",
+  "organizationSize": "LARGE",  # valores válidos SMALL|MEDIUM|LARGE|ENTERPRISE ("startup" etc se mapean)
   "organizationIndustry": "Tecnología / Software / SaaS",
   "organizationRole": "Gerente de RRHH",
   "genderDistribution": "MAYORIA_FEMENINO",
@@ -530,7 +530,7 @@ const user = { id: "user-123", email: "hr@acme.com" };
 // 3. PUT /onboarding/organization/complete
 {
   "organizationName": "TechCorp Argentina",
-  "organizationSize": "LARGE",
+  "organizationSize": "LARGE",  # valores válidos SMALL|MEDIUM|LARGE|ENTERPRISE ("startup" etc. se mapean)
   "organizationIndustry": "Tecnología / Software / SaaS",
   "organizationRole": "HR Manager",
   "genderDistribution": "EQUILIBRADA",

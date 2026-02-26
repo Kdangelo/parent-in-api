@@ -102,9 +102,6 @@ describe('Onboarding flow (e2e)', () => {
     expect(step2details.body.message).toMatch(/Detalles de la etapa actualizados/i);
     expect(step2details.body.data.is_onboarding_completed).toBe(true);
 
-    // Negative case: after onboarding is marked complete the guard will
-    // return 403 instead of validating the payload. we still want to verify
-    // that this guard works (was previously untested).
     await request(app.getHttpServer())
       .put('/onboarding/stage-details')
       .set(authHeader)
@@ -193,7 +190,7 @@ describe('Onboarding flow (e2e)', () => {
     
     const allAnswers = {
       organizationName: 'Test Org',
-      organizationSize: 'SMALL',
+      organizationSize: 'startup',
       organizationIndustry: 'Tech',
       organizationRole: 'HR',
       genderDistribution: 'EQUILIBRADA',
@@ -217,6 +214,7 @@ describe('Onboarding flow (e2e)', () => {
       .expect(200);
 
     expect(resp.body.data.organizationName).toBe(allAnswers.organizationName);
+    expect(resp.body.data.organizationSize).toBe('SMALL');
     expect(resp.body.data.organizationalChallenges).toEqual(allAnswers.organizationalChallenges);
     expect(resp.body.data.is_onboarding_completed).toBe(true);
 
